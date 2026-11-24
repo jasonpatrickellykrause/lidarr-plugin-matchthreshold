@@ -7,7 +7,7 @@ namespace NzbDrone.Core.Plugins.MatchThreshold;
 
 public interface IMatchThresholdSettingsReader
 {
-    MatchThresholds Current();
+    MatchThresholdProfile Current();
 }
 
 /// <summary>
@@ -27,7 +27,7 @@ public class MatchThresholdSettingsReader : IMatchThresholdSettingsReader
         _logger = logger;
     }
 
-    public MatchThresholds Current()
+    public MatchThresholdProfile Current()
     {
         try
         {
@@ -37,12 +37,12 @@ public class MatchThresholdSettingsReader : IMatchThresholdSettingsReader
                 .OfType<MatchThresholdSettings>()
                 .FirstOrDefault();
 
-            return settings?.ToThresholds() ?? MatchThresholds.LidarrDefaults;
+            return settings?.ToProfile() ?? MatchThresholdProfile.LidarrDefaults;
         }
         catch (Exception ex)
         {
             _logger.Warn(ex, "Match Threshold: could not read settings, using Lidarr's built-in thresholds");
-            return MatchThresholds.LidarrDefaults;
+            return MatchThresholdProfile.LidarrDefaults;
         }
     }
 }

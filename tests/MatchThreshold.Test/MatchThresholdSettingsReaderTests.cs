@@ -13,8 +13,9 @@ public class MatchThresholdSettingsReaderTests
     {
         var reader = Reader(Definition(enable: true, album: 75, track: 50));
 
-        Assert.Equal(MatchThresholds.FromPercentages(75, 50), reader.Current());
-        Assert.Equal(0.25, reader.Current().AlbumDistance);
+        Assert.Equal(MatchThresholds.FromPercentages(75, 50), reader.Current().MissingAlbum);
+        Assert.Equal(0.25, reader.Current().MissingAlbum.AlbumDistance);
+        Assert.Equal(MatchThresholds.LidarrDefaults, reader.Current().Replacing);
     }
 
     [Fact]
@@ -22,7 +23,7 @@ public class MatchThresholdSettingsReaderTests
     {
         var reader = Reader(Definition(enable: false, album: 75, track: 50));
 
-        Assert.Equal(MatchThresholds.LidarrDefaults, reader.Current());
+        Assert.Equal(MatchThresholdProfile.LidarrDefaults, reader.Current());
     }
 
     [Fact]
@@ -32,7 +33,7 @@ public class MatchThresholdSettingsReaderTests
         factory.Setup(f => f.All()).Throws(new InvalidOperationException("database unavailable"));
         var reader = new MatchThresholdSettingsReader(new Lazy<IMetadataFactory>(() => factory.Object), LogManager.CreateNullLogger());
 
-        Assert.Equal(MatchThresholds.LidarrDefaults, reader.Current());
+        Assert.Equal(MatchThresholdProfile.LidarrDefaults, reader.Current());
     }
 
     private static MatchThresholdSettingsReader Reader(params MetadataDefinition[] definitions)

@@ -57,7 +57,7 @@ public class BuiltInMatchSpecificationRemoverTests
 
     private static ConfigurableCloseAlbumMatchSpecification Configurable()
     {
-        return new ConfigurableCloseAlbumMatchSpecification(new Mock<IMatchThresholdSettingsReader>().Object, Logger);
+        return new ConfigurableCloseAlbumMatchSpecification(new Mock<IMatchThresholdSettingsReader>().Object, new Mock<NzbDrone.Core.MediaFiles.IMediaFileService>().Object, Logger);
     }
 
     // The real Lidarr class; only the specification lists matter for this test.

@@ -23,14 +23,22 @@ Plugins need a Lidarr build with plugin support (the nightly/plugins branch).
 2. Select **Enable**.
 3. Set the values and save.
 
-| Setting | Lidarr default | What it does |
+There are two sets of minimums. Which set applies depends on whether the album already has files:
+
+| Setting | Lidarr default | Applies to |
 |---|---|---|
-| Minimum album match (%) | 80 | Imports that score below this are rejected with "Album match is not close enough". Applies to new downloads and to existing files in your library. |
-| Minimum track match (%) | 60 | New downloads are rejected with "Worst track match" when any track scores below this. |
+| Missing albums: minimum album match (%) | 80 | Downloads of albums with no files yet, and files already in your library when Lidarr rescans them. Below this, the import is rejected with "Album match is not close enough". |
+| Missing albums: minimum track match (%) | 60 | Downloads of albums with no files yet. Below this for any track, the import is rejected with "Worst track match". |
+| Replacing files: minimum album match (%) | 80 | Downloads of albums that already have files, such as quality upgrades. |
+| Replacing files: minimum track match (%) | 60 | Downloads of albums that already have files. |
+
+A common setup is to lower only the missing-albums values, for example to 75, and leave replacing files at 80 and 60. Missing albums then fill in more easily, and a loose match can't overwrite music you already have.
+
+When the two sets differ, a rejection message ends with the set that was used, for example `(album already has files, replacing-files setting used)`. If the plugin can't check the album's existing files, it uses the stricter value of each pair.
 
 Changes apply to the next import. You don't need to restart.
 
-Saving a value below Lidarr's default shows a warning in the dialog. Select **Save** again to confirm. On the Metadata page, the card lists the two settings under "Metadata". Lidarr's card shows setting names only, not their values.
+Saving a value below Lidarr's default shows a warning in the dialog. You also get a warning when replacing files is set looser than missing albums. Select **Save** again to confirm. On the Metadata page, the card lists the settings under "Metadata". Lidarr's card shows setting names only, not their values.
 
 While the entry is disabled, the plugin uses Lidarr's built-in 80% and 60%, so the result is the same as without the plugin.
 
