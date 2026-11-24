@@ -63,7 +63,8 @@ public class ConfigurableCloseAlbumMatchSpecificationTests
         var decision = Spec(MatchThresholds.FromPercentages(75, 60)).IsSatisfiedBy(release, null!);
 
         Assert.False(decision.Accepted);
-        Assert.StartsWith("Album match is not close enough: 70.0% vs 75%", decision.Reason);
+        // Percent formatting is culture-dependent ("70.0%" on Windows, "70.0 %" with invariant culture), as in Lidarr.
+        Assert.StartsWith($"Album match is not close enough: {0.70:P1} vs {0.75:P0}", decision.Reason);
     }
 
     [Fact]
