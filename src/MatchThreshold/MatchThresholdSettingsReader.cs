@@ -21,6 +21,9 @@ public class MatchThresholdSettingsReader : IMatchThresholdSettingsReader
     private readonly Lazy<IMetadataFactory> _metadataFactory;
     private readonly Logger _logger;
 
+    // Log the unacknowledged fallback once, not on every import decision; log again if it recurs after being fixed.
+    private bool _warnedUnacknowledged;
+
     public MatchThresholdSettingsReader(Lazy<IMetadataFactory> metadataFactory, Logger logger)
     {
         _metadataFactory = metadataFactory;
@@ -37,7 +40,19 @@ public class MatchThresholdSettingsReader : IMatchThresholdSettingsReader
                 .OfType<MatchThresholdSettings>()
                 .FirstOrDefault();
 
-            return settings?.ToProfile() ?? MatchThresholdProfile.LidarrDefaults;
+            if (settings == null)
+            {
+                return MatchThresholdProfile.LidarrDefaults;
+            }
+
+            var unacknowledged = settings.LowersAnyThreshold() && !settings.AcknowledgeDataLossRisk;
+            if (unacknowledged && !_warnedUnacknowledged)
+            {
+                _logger.Warn("Match Threshold: values below Lidarr's defaults are saved, but \"Backed up and accept data-loss risk\" is not ticked. Imports use Lidarr's 80% and 60% until it is.");
+            }
+
+            _warnedUnacknowledged = unacknowledged;
+            return settings.ToProfile();
         }
         catch (Exception ex)
         {

@@ -19,9 +19,16 @@ Plugins need a Lidarr build with plugin support (the nightly/plugins branch).
 
 ## Configure
 
-1. Go to **Settings > Metadata** and open **Match Threshold**.
-2. Select **Enable**.
-3. Set the values and save.
+1. Back up your music library and your Lidarr database.
+2. Go to **Settings > Metadata** and open **Match Threshold**.
+3. Select **Enable**.
+4. Set the values.
+5. If any value is below Lidarr's default, select **Backed up and accept data-loss risk**. You can't save lowered values without it.
+6. Save.
+
+> **Warning:** This plugin can lead to data loss. A lowered minimum lets Lidarr import the wrong release, and a wrong import can replace or remove files you already have. Keep a current backup and a recycle bin (Settings > Media Management).
+
+While **Backed up and accept data-loss risk** is cleared, any value below Lidarr's default is ignored and Lidarr's 80% and 60% are used. Lidarr logs a warning once when this happens. Values above the defaults don't need the checkbox.
 
 There are two sets of minimums. Which set applies depends on whether the album already has files:
 

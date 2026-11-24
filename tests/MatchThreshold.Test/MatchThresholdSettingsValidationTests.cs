@@ -17,7 +17,7 @@ public class MatchThresholdSettingsValidationTests
     [Fact]
     public void Album_below_80_warns_but_is_valid()
     {
-        var result = new MatchThresholdSettings { AlbumMatchMinimum = 75 }.Validate();
+        var result = new MatchThresholdSettings { AlbumMatchMinimum = 75, AcknowledgeDataLossRisk = true }.Validate();
 
         Assert.True(result.IsValid);
         Assert.Equal(new[] { MatchThresholdSettings.AlbumBelowDefaultWarning }, result.Warnings.Select(w => w.ErrorMessage));
@@ -26,7 +26,7 @@ public class MatchThresholdSettingsValidationTests
     [Fact]
     public void Album_below_70_gives_the_stronger_warning_only()
     {
-        var result = new MatchThresholdSettings { AlbumMatchMinimum = 65 }.Validate();
+        var result = new MatchThresholdSettings { AlbumMatchMinimum = 65, AcknowledgeDataLossRisk = true }.Validate();
 
         Assert.True(result.IsValid);
         Assert.Equal(new[] { MatchThresholdSettings.AlbumFarBelowDefaultWarning }, result.Warnings.Select(w => w.ErrorMessage));
@@ -35,7 +35,7 @@ public class MatchThresholdSettingsValidationTests
     [Fact]
     public void Track_below_60_warns_but_is_valid()
     {
-        var result = new MatchThresholdSettings { TrackMatchMinimum = 50 }.Validate();
+        var result = new MatchThresholdSettings { TrackMatchMinimum = 50, AcknowledgeDataLossRisk = true }.Validate();
 
         Assert.True(result.IsValid);
         Assert.Equal(new[] { MatchThresholdSettings.TrackBelowDefaultWarning }, result.Warnings.Select(w => w.ErrorMessage));
@@ -44,7 +44,7 @@ public class MatchThresholdSettingsValidationTests
     [Fact]
     public void Out_of_range_is_an_error_without_extra_warnings()
     {
-        var result = new MatchThresholdSettings { AlbumMatchMinimum = 0 }.Validate();
+        var result = new MatchThresholdSettings { AlbumMatchMinimum = 0, AcknowledgeDataLossRisk = true }.Validate();
 
         Assert.False(result.IsValid);
         Assert.Empty(result.Warnings);
@@ -53,7 +53,7 @@ public class MatchThresholdSettingsValidationTests
     [Fact]
     public void Replacing_below_80_adds_the_replacement_warning()
     {
-        var result = new MatchThresholdSettings { AlbumMatchMinimum = 75, ReplacingAlbumMatchMinimum = 75 }.Validate();
+        var result = new MatchThresholdSettings { AlbumMatchMinimum = 75, ReplacingAlbumMatchMinimum = 75, AcknowledgeDataLossRisk = true }.Validate();
 
         Assert.True(result.IsValid);
         Assert.Contains(MatchThresholdSettings.ReplacingBelowDefaultWarning, result.Warnings.Select(w => w.ErrorMessage));
@@ -72,7 +72,7 @@ public class MatchThresholdSettingsValidationTests
     [Fact]
     public void Lowered_missing_albums_with_default_replacing_warns_only_about_missing()
     {
-        var result = new MatchThresholdSettings { AlbumMatchMinimum = 75 }.Validate();
+        var result = new MatchThresholdSettings { AlbumMatchMinimum = 75, AcknowledgeDataLossRisk = true }.Validate();
 
         Assert.Equal(new[] { MatchThresholdSettings.AlbumBelowDefaultWarning }, result.Warnings.Select(w => w.ErrorMessage));
     }

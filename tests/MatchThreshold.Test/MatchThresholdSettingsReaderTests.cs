@@ -43,13 +43,13 @@ public class MatchThresholdSettingsReaderTests
         return new MatchThresholdSettingsReader(new Lazy<IMetadataFactory>(() => factory.Object), LogManager.CreateNullLogger());
     }
 
-    private static MetadataDefinition Definition(bool enable, int album, int track)
+    private static MetadataDefinition Definition(bool enable, int album, int track, bool acknowledged = true)
     {
         return new MetadataDefinition
         {
             Enable = enable,
             Implementation = nameof(MatchThresholdMetadata),
-            Settings = new MatchThresholdSettings { AlbumMatchMinimum = album, TrackMatchMinimum = track }
+            Settings = new MatchThresholdSettings { AlbumMatchMinimum = album, TrackMatchMinimum = track, AcknowledgeDataLossRisk = acknowledged }
         };
     }
 }

@@ -64,9 +64,45 @@ public class MatchThresholdSettings : IProviderConfig
     [FieldDefinition(3, Label = "Replacing files: minimum track match (%)", Type = FieldType.Number, Section = MetadataSectionType.Metadata, HelpText = "For downloads of albums that already have files. Lidarr's built-in value is 60.", HelpTextWarning = ReplacingTrackFieldWarning)]
     public int ReplacingTrackMatchMinimum { get; set; } = LidarrTrackMatchMinimum;
 
-    public MatchThresholdProfile ToProfile() => new(
-        MatchThresholds.FromPercentages(AlbumMatchMinimum, TrackMatchMinimum),
-        MatchThresholds.FromPercentages(ReplacingAlbumMatchMinimum, ReplacingTrackMatchMinimum));
+    [FieldDefinition(4, Label = "Backed up and accept data-loss risk", Type = FieldType.Checkbox, Section = MetadataSectionType.Metadata, HelpText = AcknowledgementText, HelpTextWarning = AcknowledgementWarning)]
+    public bool AcknowledgeDataLossRisk { get; set; }
+
+    internal const string AcknowledgementText =
+        "I have a current backup of my music library and my Lidarr database. I understand that lowering these values can import the wrong release, replace or remove files I already have, and that this plugin can lead to data loss.";
+
+    internal const string AcknowledgementWarning =
+        "Required to save any value below Lidarr's defaults. While this is unticked, values below the defaults are not used: imports use Lidarr's 80% and 60%.";
+
+    internal const string AcknowledgementRequiredError =
+        "Tick \"Backed up and accept data-loss risk\" to save values below Lidarr's defaults (80% album, 60% track).";
+
+    /// <summary>True when any minimum is below Lidarr's built-in value, which is what can cause data loss.</summary>
+    public bool LowersAnyThreshold() =>
+        AlbumMatchMinimum < LidarrAlbumMatchMinimum ||
+        TrackMatchMinimum < LidarrTrackMatchMinimum ||
+        ReplacingAlbumMatchMinimum < LidarrAlbumMatchMinimum ||
+        ReplacingTrackMatchMinimum < LidarrTrackMatchMinimum;
+
+    /// <summary>
+    /// The thresholds imports use. Without the acknowledgement, each minimum is raised to at least
+    /// Lidarr's default, so settings saved before the checkbox existed can't lower anything.
+    /// </summary>
+    public MatchThresholdProfile ToProfile()
+    {
+        var album = Effective(AlbumMatchMinimum, LidarrAlbumMatchMinimum);
+        var track = Effective(TrackMatchMinimum, LidarrTrackMatchMinimum);
+        var replacingAlbum = Effective(ReplacingAlbumMatchMinimum, LidarrAlbumMatchMinimum);
+        var replacingTrack = Effective(ReplacingTrackMatchMinimum, LidarrTrackMatchMinimum);
+
+        return new MatchThresholdProfile(
+            MatchThresholds.FromPercentages(album, track),
+            MatchThresholds.FromPercentages(replacingAlbum, replacingTrack));
+    }
+
+    private int Effective(int value, int lidarrDefault)
+    {
+        return AcknowledgeDataLossRisk ? value : Math.Max(value, lidarrDefault);
+    }
 
     public NzbDroneValidationResult Validate() => new(Validator.Validate(this));
 }
@@ -79,6 +115,12 @@ public class MatchThresholdSettingsValidator : AbstractValidator<MatchThresholdS
         Range(c => c.TrackMatchMinimum, "Missing albums: minimum track match");
         Range(c => c.ReplacingAlbumMatchMinimum, "Replacing files: minimum album match");
         Range(c => c.ReplacingTrackMatchMinimum, "Replacing files: minimum track match");
+
+        // An error, not a warning: lowered values can't be saved without the acknowledgement.
+        RuleFor(c => c.AcknowledgeDataLossRisk)
+            .Equal(true)
+            .When(c => c.LowersAnyThreshold())
+            .WithMessage(MatchThresholdSettings.AcknowledgementRequiredError);
 
         // Warnings, not errors: Lidarr shows them when saving and saves only after Save is clicked again.
         AlbumWarnings(c => c.AlbumMatchMinimum);
