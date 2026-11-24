@@ -1,0 +1,32 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>$(PluginTargetFramework)</TargetFramework>
+    <RootNamespace>NzbDrone.Core.Plugins.MatchThreshold</RootNamespace>
+    <AssemblyName>Lidarr.Plugin.$(MSBuildProjectName)</AssemblyName>
+    <Nullable>enable</Nullable>
+    <!-- CI passes PluginVersion (the release tag) so Lidarr sees the real installed version. -->
+    <Version Condition="'$(PluginVersion)' != ''">$(PluginVersion)</Version>
+    <Version Condition="'$(Version)' == ''">1.0.0</Version>
+    <!-- Lidarr parses InformationalVersion with System.Version; a "+<commit>" suffix breaks that. -->
+    <IncludeSourceRevisionInInformationalVersion>false</IncludeSourceRevisionInInformationalVersion>
+    <NoWarn>$(NoWarn);CS1591</NoWarn>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <InternalsVisibleTo Include="MatchThreshold.Test" />
+  </ItemGroup>
+
+  <Import Project="../../LidarrReferences.targets" />
+
+  <Target Name="PackageRelease" AfterTargets="Build" Condition="'$(Configuration)' == 'Release'">
+    <PropertyGroup>
+      <ReleasePackageDir>$(IntermediateOutputPath)package/</ReleasePackageDir>
+    </PropertyGroup>
+    <RemoveDir Directories="$(ReleasePackageDir)" />
+    <MakeDir Directories="$(ReleasePackageDir)" />
+    <Copy SourceFiles="$(TargetPath);$(TargetDir)$(TargetName).pdb" DestinationFolder="$(ReleasePackageDir)" />
+    <ZipDirectory SourceDirectory="$(ReleasePackageDir)" DestinationFile="$(TargetDir)$(TargetName).$(TargetFramework).zip" Overwrite="true" />
+  </Target>
+
+</Project>

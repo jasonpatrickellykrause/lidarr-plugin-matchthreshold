@@ -1,0 +1,27 @@
+<Project>
+  <PropertyGroup>
+    <PlatformTarget>AnyCPU</PlatformTarget>
+    <TargetLatestRuntimePatch>true</TargetLatestRuntimePatch>
+    <RepoRootDir>$(MSBuildThisFileDirectory)</RepoRootDir>
+    <PluginProject>false</PluginProject>
+    <PluginProject Condition="$(MSBuildProjectName)!='MatchThreshold.Test'">true</PluginProject>
+
+    <!-- Lidarr installs the release asset named for its own .NET version:
+         net8.0 for Lidarr 3.x and net10.0 for Lidarr 4.x (-p:PluginTargetFramework=net10.0). -->
+    <PluginTargetFramework Condition="'$(PluginTargetFramework)'==''">net8.0</PluginTargetFramework>
+    <!-- Lidarr assembly version the plugin is built against; LidarrReferences.targets loads that version. -->
+    <LidarrAssemblyVersion Condition="'$(LidarrAssemblyVersion)'==''">3.1.3.4968</LidarrAssemblyVersion>
+  </PropertyGroup>
+
+  <PropertyGroup>
+    <Configuration Condition="'$(Configuration)'==''">Debug</Configuration>
+    <BaseIntermediateOutputPath>$(RepoRootDir)_temp\obj\$(MSBuildProjectName)\</BaseIntermediateOutputPath>
+    <IntermediateOutputPath>$(RepoRootDir)_temp\obj\$(MSBuildProjectName)\$(Configuration)\</IntermediateOutputPath>
+    <OutputPath>$(RepoRootDir)_temp\bin\$(Configuration)\$(PluginTargetFramework)\$(MSBuildProjectName)\</OutputPath>
+    <BaseIntermediateOutputPath>$([MSBuild]::MakeRelative('$(MSBuildProjectDirectory)', '$(BaseIntermediateOutputPath)'))</BaseIntermediateOutputPath>
+    <IntermediateOutputPath>$([MSBuild]::MakeRelative('$(MSBuildProjectDirectory)', '$(IntermediateOutputPath)'))</IntermediateOutputPath>
+    <OutputPath>$([MSBuild]::MakeRelative('$(MSBuildProjectDirectory)', '$(OutputPath)'))</OutputPath>
+    <DebugSymbols>true</DebugSymbols>
+    <AppendTargetFrameworkToOutputPath Condition="'$(PluginProject)'=='true'">false</AppendTargetFrameworkToOutputPath>
+  </PropertyGroup>
+</Project>

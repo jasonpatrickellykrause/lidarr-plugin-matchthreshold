@@ -1,0 +1,115 @@
+name: Build Plugin
+
+on:
+  push:
+    branches:
+      - main
+    tags-ignore:
+      - '**'
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+env:
+  DOTNET_SKIP_FIRST_TIME_EXPERIENCE: true
+  DOTNET_CLI_TELEMETRY_OPTOUT: true
+  PLUGIN_NAME: Lidarr.Plugin.MatchThreshold
+  PLUGIN_VERSION: 1.0.0.${{ github.run_number }}
+
+jobs:
+  build:
+    # Lidarr installs the release asset named for its own .NET version (….net8.0.zip on Lidarr 3.x,
+    # ….net10.0.zip on Lidarr 4.x), so every release carries both.
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - framework: net8.0
+            dotnet: 8.0.405
+            lidarr_version: 3.1.3.4968
+            lidarr_ref: ''
+          # Lidarr 4.x has no GitHub release with binaries, so this leg builds the reference
+          # assemblies from source (4.0.0.5222 on develop; nightlies are untagged).
+          - framework: net10.0
+            dotnet: 10.0.404
+            lidarr_version: 4.0.0.5222
+            lidarr_ref: ddf8080fac613433354d4ee6a36a768148f7099e
+    name: build (${{ matrix.framework }})
+    runs-on: ubuntu-latest
+    env:
+      BUILD_PROPS: -p:PluginTargetFramework=${{ matrix.framework }} -p:LidarrAssemblyVersion=${{ matrix.lidarr_version }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: ${{ matrix.dotnet }}
+
+      - name: Prepare pinned Lidarr binaries
+        if: matrix.lidarr_ref == ''
+        run: python3 scripts/prepare-lidarr.py
+
+      - name: Build Lidarr ${{ matrix.lidarr_version }} references from source
+        if: matrix.lidarr_ref != ''
+        run: |
+          git init ext/Lidarr
+          git -C ext/Lidarr fetch --depth 1 https://github.com/Lidarr/Lidarr.git ${{ matrix.lidarr_ref }}
+          git -C ext/Lidarr checkout --detach FETCH_HEAD
+
+          # Lidarr checks the version a plugin was built against, so stamp the release version.
+          props=ext/Lidarr/src/Directory.Build.props
+          sed -i -E "s#<AssemblyVersion>[0-9.*]+</AssemblyVersion>#<AssemblyVersion>${{ matrix.lidarr_version }}</AssemblyVersion>#" "$props"
+          grep "<AssemblyVersion>${{ matrix.lidarr_version }}</AssemblyVersion>" "$props"
+
+          dotnet build ext/Lidarr/src/NzbDrone.Host/Lidarr.Host.csproj -c Release -f ${{ matrix.framework }} \
+            -p:CopyLocalLockFileAssemblies=true -p:TreatWarningsAsErrors=false -p:WarningsNotAsErrors="NU1902%3BNU1903"
+
+          dest=_temp/lidarr/${{ matrix.lidarr_version }}
+          rm -rf "$dest" && mkdir -p "$dest"
+          cp ext/Lidarr/_output/${{ matrix.framework }}/*.dll "$dest/"
+          for dll in Lidarr.Core Lidarr.Common NLog FluentValidation System.IO.Abstractions DryIoc DryIoc.Microsoft.DependencyInjection; do
+            test -f "$dest/$dll.dll" || { echo "::error::missing $dll.dll"; exit 1; }
+          done
+
+      - name: Build
+        run: |
+          dotnet restore MatchThreshold.sln $BUILD_PROPS
+          dotnet build MatchThreshold.sln -c Release --no-restore -p:PluginVersion=${PLUGIN_VERSION} $BUILD_PROPS
+
+      - name: Test
+        run: dotnet test tests/MatchThreshold.Test/MatchThreshold.Test.csproj -c Release --no-build --verbosity normal $BUILD_PROPS
+
+      - name: Upload build artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ env.PLUGIN_NAME }}.${{ matrix.framework }}
+          path: _temp/bin/Release/${{ matrix.framework }}/MatchThreshold/${{ env.PLUGIN_NAME }}.${{ matrix.framework }}.zip
+          if-no-files-found: error
+
+  release:
+    needs: build
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download build artifacts
+        uses: actions/download-artifact@v4
+        with:
+          pattern: ${{ env.PLUGIN_NAME }}.*
+          merge-multiple: true
+          path: dist
+
+      - name: Publish release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ env.PLUGIN_VERSION }}
+          name: ${{ env.PLUGIN_VERSION }}
+          # Published, not draft, so Lidarr's plugin update check can offer it.
+          draft: false
+          make_latest: true
+          files: |
+            dist/${{ env.PLUGIN_NAME }}.net8.0.zip
+            dist/${{ env.PLUGIN_NAME }}.net10.0.zip
