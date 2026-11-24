@@ -30,6 +30,8 @@ Plugins need a Lidarr build with plugin support (the nightly/plugins branch).
 
 Changes apply to the next import. You don't need to restart.
 
+Saving a value below Lidarr's default shows a warning in the dialog. Select **Save** again to confirm. On the Metadata page, the card lists the two settings under "Metadata". Lidarr's card shows setting names only, not their values.
+
 While the entry is disabled, the plugin uses Lidarr's built-in 80% and 60%, so the result is the same as without the plugin.
 
 The Match Threshold entry doesn't write any metadata files. It sits under Metadata only because that's the place Lidarr gives a plugin a settings page.
