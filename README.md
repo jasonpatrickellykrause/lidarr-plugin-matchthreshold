@@ -30,14 +30,16 @@ Plugins need a Lidarr build with plugin support (the nightly/plugins branch).
 
 While **Backed up and accept data-loss risk** is cleared, any value below Lidarr's default is ignored and Lidarr's 80% and 60% are used. Lidarr logs a warning once when this happens. Values above the defaults don't need the checkbox.
 
+The lowest values allowed are 60% for album match and 40% for track match. Below those, a "match" is usually a different album by the same artist, or a different song. A value saved below them by an earlier version is treated as the lowest allowed value.
+
 There are two sets of minimums. Which set applies depends on whether the album already has files:
 
-| Setting | Lidarr default | Applies to |
-|---|---|---|
-| Missing albums: minimum album match (%) | 80 | Downloads of albums with no files yet, and files already in your library when Lidarr rescans them. Below this, the import is rejected with "Album match is not close enough". |
-| Missing albums: minimum track match (%) | 60 | Downloads of albums with no files yet. Below this for any track, the import is rejected with "Worst track match". |
-| Replacing files: minimum album match (%) | 80 | Downloads of albums that already have files, such as quality upgrades. |
-| Replacing files: minimum track match (%) | 60 | Downloads of albums that already have files. |
+| Setting | Lidarr default | Lowest allowed | Applies to |
+|---|---|---|---|
+| Missing albums: minimum album match (%) | 80 | 60 | Downloads of albums with no files yet, and files already in your library when Lidarr rescans them. Below this, the import is rejected with "Album match is not close enough". |
+| Missing albums: minimum track match (%) | 60 | 40 | Downloads of albums with no files yet. Below this for any track, the import is rejected with "Worst track match". |
+| Replacing files: minimum album match (%) | 80 | 60 | Downloads of albums that already have files, such as quality upgrades. |
+| Replacing files: minimum track match (%) | 60 | 40 | Downloads of albums that already have files. |
 
 A common setup is to lower only the missing-albums values, for example to 75, and leave replacing files at 80 and 60. Missing albums then fill in more easily, and a loose match can't overwrite music you already have.
 

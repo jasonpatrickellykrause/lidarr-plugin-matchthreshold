@@ -20,7 +20,7 @@ public class MatchThresholdSettingsValidationTests
         var result = new MatchThresholdSettings { AlbumMatchMinimum = 75, AcknowledgeDataLossRisk = true }.Validate();
 
         Assert.True(result.IsValid);
-        Assert.Equal(new[] { MatchThresholdSettings.AlbumBelowDefaultWarning }, result.Warnings.Select(w => w.ErrorMessage));
+        Assert.Equal(new[] { MatchThresholdSettings.BelowDefaultWarning }, result.Warnings.Select(w => w.ErrorMessage));
     }
 
     [Fact]
@@ -38,7 +38,7 @@ public class MatchThresholdSettingsValidationTests
         var result = new MatchThresholdSettings { TrackMatchMinimum = 50, AcknowledgeDataLossRisk = true }.Validate();
 
         Assert.True(result.IsValid);
-        Assert.Equal(new[] { MatchThresholdSettings.TrackBelowDefaultWarning }, result.Warnings.Select(w => w.ErrorMessage));
+        Assert.Equal(new[] { MatchThresholdSettings.BelowDefaultWarning }, result.Warnings.Select(w => w.ErrorMessage));
     }
 
     [Fact]
@@ -51,13 +51,53 @@ public class MatchThresholdSettingsValidationTests
     }
 
     [Fact]
-    public void Replacing_below_80_adds_the_replacement_warning()
+    public void Each_lowered_field_gets_one_warning()
     {
         var result = new MatchThresholdSettings { AlbumMatchMinimum = 75, ReplacingAlbumMatchMinimum = 75, AcknowledgeDataLossRisk = true }.Validate();
 
         Assert.True(result.IsValid);
-        Assert.Contains(MatchThresholdSettings.ReplacingBelowDefaultWarning, result.Warnings.Select(w => w.ErrorMessage));
-        Assert.DoesNotContain(MatchThresholdSettings.ReplacingLooserThanMissingWarning, result.Warnings.Select(w => w.ErrorMessage));
+        Assert.Equal(
+            new[] { nameof(MatchThresholdSettings.AlbumMatchMinimum), nameof(MatchThresholdSettings.ReplacingAlbumMatchMinimum) },
+            result.Warnings.Select(w => w.PropertyName).OrderBy(p => p));
+        Assert.All(result.Warnings, w => Assert.Equal(MatchThresholdSettings.BelowDefaultWarning, w.ErrorMessage));
+    }
+
+    [Theory]
+    [InlineData(59, 60, false)]
+    [InlineData(60, 60, true)]
+    [InlineData(80, 39, false)]
+    [InlineData(80, 40, true)]
+    [InlineData(101, 60, false)]
+    public void Values_below_the_floors_cannot_be_saved(int album, int track, bool valid)
+    {
+        var result = new MatchThresholdSettings
+        {
+            AlbumMatchMinimum = album,
+            TrackMatchMinimum = track,
+            ReplacingAlbumMatchMinimum = Math.Max(album, 80),
+            ReplacingTrackMatchMinimum = Math.Max(track, 60),
+            AcknowledgeDataLossRisk = true
+        }.Validate();
+
+        Assert.Equal(valid, result.IsValid);
+    }
+
+    [Fact]
+    public void A_value_below_the_floor_gets_the_range_error_only()
+    {
+        var result = new MatchThresholdSettings { AlbumMatchMinimum = 50, AcknowledgeDataLossRisk = true }.Validate();
+
+        Assert.Equal(new[] { $"Must be between {MatchThresholdSettings.AlbumMatchFloor} and 100" }, result.Errors.Select(e => e.ErrorMessage));
+        Assert.Empty(result.Warnings);
+    }
+
+    [Fact]
+    public void Saved_values_below_the_floors_are_raised_to_them()
+    {
+        var settings = new MatchThresholdSettings { AlbumMatchMinimum = 10, TrackMatchMinimum = 5, AcknowledgeDataLossRisk = true };
+
+        Assert.Equal(MatchThresholds.FromPercentages(60, 40), settings.ToProfile().MissingAlbum);
+        Assert.Equal(0.40, settings.ToProfile().MissingAlbum.AlbumDistance);
     }
 
     [Fact]
@@ -74,7 +114,7 @@ public class MatchThresholdSettingsValidationTests
     {
         var result = new MatchThresholdSettings { AlbumMatchMinimum = 75, AcknowledgeDataLossRisk = true }.Validate();
 
-        Assert.Equal(new[] { MatchThresholdSettings.AlbumBelowDefaultWarning }, result.Warnings.Select(w => w.ErrorMessage));
+        Assert.Equal(new[] { MatchThresholdSettings.BelowDefaultWarning }, result.Warnings.Select(w => w.ErrorMessage));
     }
 
     [Fact]

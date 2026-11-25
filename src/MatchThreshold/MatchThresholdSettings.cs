@@ -21,60 +21,47 @@ public class MatchThresholdSettings : IProviderConfig
     public const int LidarrAlbumMatchMinimum = 80;
     public const int LidarrTrackMatchMinimum = 60;
 
-    internal const string MissingAlbumFieldWarning =
-        "Lowering this lets Lidarr import files it matched to the wrong release, such as another edition, a regional release, or a different album with a similar title. " +
-        "A wrong match is renamed and moved into that album's folder and marks the album as downloaded, so Lidarr stops searching for the right one. " +
-        "It also applies when Lidarr rescans files already in your library.";
+    // Floors. Below about 60% an album match is a different album that shares the artist; below about 40% a track
+    // match is a different song. Lower values can't be saved, and older saved values are raised to these.
+    public const int AlbumMatchFloor = 60;
+    public const int TrackMatchFloor = 40;
 
-    internal const string MissingTrackFieldWarning =
-        "Lowering this lets a file import as the wrong track, for example a live or remixed version in place of the album version.";
+    // Per-field warnings are one line each so the dialog stays compact; the full risk is on the checkbox.
+    internal const string MissingAlbumFieldWarning = "Lower values can import the wrong release. Also applies to library rescans.";
+    internal const string MissingTrackFieldWarning = "Lower values can import the wrong version of a track.";
+    internal const string ReplacingAlbumFieldWarning = "Lower values let a wrong release replace files you have.";
+    internal const string ReplacingTrackFieldWarning = "Lower values let a wrong version replace a track you have.";
 
-    internal const string ReplacingAlbumFieldWarning =
-        "Lowering this lets a download that matched the wrong release replace music you already have. Lidarr deletes or recycles the files it replaces.";
-
-    internal const string ReplacingTrackFieldWarning =
-        "Lowering this lets a wrong track, for example a live or remixed version, replace the file you already have for that track.";
-
-    internal const string AlbumBelowDefaultWarning =
-        "Below Lidarr's 80%, more wrong matches will import without asking. Check Activity > History after imports, and use Manual Import for one-off albums instead if you can.";
-
-    internal const string AlbumFarBelowDefaultWarning =
-        "Below 70%, releases that differ in several fields at once, such as album title, year, track count and country, can still import. Expect wrong imports.";
-
-    internal const string TrackBelowDefaultWarning =
-        "Below Lidarr's 60%, files with a different title or length can import as the wrong track.";
-
-    internal const string ReplacingBelowDefaultWarning =
-        "Below Lidarr's default, a wrong match can replace files you already have. Keep a recycle bin set under Settings > Media Management so replaced files can be restored.";
-
-    internal const string ReplacingLooserThanMissingWarning =
-        "Replacing files is set looser than filling missing albums. Replacements usually need to be at least as strict, because a bad replacement removes music you had.";
+    // Shown when saving. Lidarr lists each one under its field, so they're short too.
+    internal const string BelowDefaultWarning = "Below Lidarr's default. Check Activity > History after imports.";
+    internal const string AlbumFarBelowDefaultWarning = "Below 70%, albums that differ in title, year, track count and country can import. Expect wrong imports.";
+    internal const string ReplacingLooserThanMissingWarning = "Looser than missing albums. A bad replacement removes music you had.";
 
     private static readonly MatchThresholdSettingsValidator Validator = new();
 
-    [FieldDefinition(0, Label = "Missing albums: minimum album match (%)", Type = FieldType.Number, Section = MetadataSectionType.Metadata, HelpText = "For albums with no files yet. Imports scoring below this are rejected with \"Album match is not close enough\". Lidarr's built-in value is 80.", HelpTextWarning = MissingAlbumFieldWarning)]
+    [FieldDefinition(0, Label = "Missing albums: minimum album match (%)", Type = FieldType.Number, Section = MetadataSectionType.Metadata, HelpText = "For albums with no files yet. Lidarr's default is 80, lowest allowed is 60.", HelpTextWarning = MissingAlbumFieldWarning)]
     public int AlbumMatchMinimum { get; set; } = LidarrAlbumMatchMinimum;
 
-    [FieldDefinition(1, Label = "Missing albums: minimum track match (%)", Type = FieldType.Number, Section = MetadataSectionType.Metadata, HelpText = "For albums with no files yet. Downloads are rejected with \"Worst track match\" when any track scores below this. Lidarr's built-in value is 60.", HelpTextWarning = MissingTrackFieldWarning)]
+    [FieldDefinition(1, Label = "Missing albums: minimum track match (%)", Type = FieldType.Number, Section = MetadataSectionType.Metadata, HelpText = "For albums with no files yet. Lidarr's default is 60, lowest allowed is 40.", HelpTextWarning = MissingTrackFieldWarning)]
     public int TrackMatchMinimum { get; set; } = LidarrTrackMatchMinimum;
 
-    [FieldDefinition(2, Label = "Replacing files: minimum album match (%)", Type = FieldType.Number, Section = MetadataSectionType.Metadata, HelpText = "For downloads of albums that already have files, such as quality upgrades. Lidarr's built-in value is 80.", HelpTextWarning = ReplacingAlbumFieldWarning)]
+    [FieldDefinition(2, Label = "Replacing files: minimum album match (%)", Type = FieldType.Number, Section = MetadataSectionType.Metadata, HelpText = "For albums that already have files, such as upgrades. Lidarr's default is 80, lowest allowed is 60.", HelpTextWarning = ReplacingAlbumFieldWarning)]
     public int ReplacingAlbumMatchMinimum { get; set; } = LidarrAlbumMatchMinimum;
 
-    [FieldDefinition(3, Label = "Replacing files: minimum track match (%)", Type = FieldType.Number, Section = MetadataSectionType.Metadata, HelpText = "For downloads of albums that already have files. Lidarr's built-in value is 60.", HelpTextWarning = ReplacingTrackFieldWarning)]
+    [FieldDefinition(3, Label = "Replacing files: minimum track match (%)", Type = FieldType.Number, Section = MetadataSectionType.Metadata, HelpText = "For albums that already have files. Lidarr's default is 60, lowest allowed is 40.", HelpTextWarning = ReplacingTrackFieldWarning)]
     public int ReplacingTrackMatchMinimum { get; set; } = LidarrTrackMatchMinimum;
 
     [FieldDefinition(4, Label = "Backed up and accept data-loss risk", Type = FieldType.Checkbox, Section = MetadataSectionType.Metadata, HelpText = AcknowledgementText, HelpTextWarning = AcknowledgementWarning)]
     public bool AcknowledgeDataLossRisk { get; set; }
 
     internal const string AcknowledgementText =
-        "I have a current backup of my music library and my Lidarr database. I understand that lowering these values can import the wrong release, replace or remove files I already have, and that this plugin can lead to data loss.";
+        "I have a current backup of my music and Lidarr database, and accept that lower values can import wrong releases and replace or remove files I have.";
 
     internal const string AcknowledgementWarning =
-        "Required to save any value below Lidarr's defaults. While this is unticked, values below the defaults are not used: imports use Lidarr's 80% and 60%.";
+        "Required for values below 80% album or 60% track. Until ticked, Lidarr's defaults are used.";
 
     internal const string AcknowledgementRequiredError =
-        "Tick \"Backed up and accept data-loss risk\" to save values below Lidarr's defaults (80% album, 60% track).";
+        "Tick \"Backed up and accept data-loss risk\" to save values below 80% album or 60% track.";
 
     /// <summary>True when any minimum is below Lidarr's built-in value, which is what can cause data loss.</summary>
     public bool LowersAnyThreshold() =>
@@ -111,10 +98,10 @@ public class MatchThresholdSettingsValidator : AbstractValidator<MatchThresholdS
 {
     public MatchThresholdSettingsValidator()
     {
-        Range(c => c.AlbumMatchMinimum, "Missing albums: minimum album match");
-        Range(c => c.TrackMatchMinimum, "Missing albums: minimum track match");
-        Range(c => c.ReplacingAlbumMatchMinimum, "Replacing files: minimum album match");
-        Range(c => c.ReplacingTrackMatchMinimum, "Replacing files: minimum track match");
+        Range(c => c.AlbumMatchMinimum, MatchThresholdSettings.AlbumMatchFloor);
+        Range(c => c.TrackMatchMinimum, MatchThresholdSettings.TrackMatchFloor);
+        Range(c => c.ReplacingAlbumMatchMinimum, MatchThresholdSettings.AlbumMatchFloor);
+        Range(c => c.ReplacingTrackMatchMinimum, MatchThresholdSettings.TrackMatchFloor);
 
         // An error, not a warning: lowered values can't be saved without the acknowledgement.
         RuleFor(c => c.AcknowledgeDataLossRisk)
@@ -123,41 +110,38 @@ public class MatchThresholdSettingsValidator : AbstractValidator<MatchThresholdS
             .WithMessage(MatchThresholdSettings.AcknowledgementRequiredError);
 
         // Warnings, not errors: Lidarr shows them when saving and saves only after Save is clicked again.
-        AlbumWarnings(c => c.AlbumMatchMinimum);
+        // At most one per field, and none on a value that already failed the range check.
+        AlbumWarning(c => c.AlbumMatchMinimum);
         TrackWarning(c => c.TrackMatchMinimum);
-
-        AlbumWarnings(c => c.ReplacingAlbumMatchMinimum);
+        AlbumWarning(c => c.ReplacingAlbumMatchMinimum);
         TrackWarning(c => c.ReplacingTrackMatchMinimum);
-        RuleFor(c => c.ReplacingAlbumMatchMinimum)
-            .Must(v => v >= MatchThresholdSettings.LidarrAlbumMatchMinimum)
-            .When(c => c.ReplacingAlbumMatchMinimum >= 1)
-            .WithMessage(MatchThresholdSettings.ReplacingBelowDefaultWarning)
-            .AsWarning();
 
         RuleFor(c => c.ReplacingAlbumMatchMinimum)
             .Must((c, v) => v >= c.AlbumMatchMinimum && c.ReplacingTrackMatchMinimum >= c.TrackMatchMinimum)
-            .When(c => c.ReplacingAlbumMatchMinimum >= 1)
+            .When(c => InRange(c.ReplacingAlbumMatchMinimum, MatchThresholdSettings.AlbumMatchFloor))
             .WithMessage(MatchThresholdSettings.ReplacingLooserThanMissingWarning)
             .AsWarning();
     }
 
-    private void Range(Expression<Func<MatchThresholdSettings, int>> field, string label)
+    private static bool InRange(int value, int floor) => value >= floor && value <= 100;
+
+    private void Range(Expression<Func<MatchThresholdSettings, int>> field, int floor)
     {
-        RuleFor(field).InclusiveBetween(1, 100).WithMessage($"{label} must be between 1 and 100");
+        RuleFor(field).InclusiveBetween(floor, 100).WithMessage($"Must be between {floor} and 100");
     }
 
-    private void AlbumWarnings(Expression<Func<MatchThresholdSettings, int>> field)
+    private void AlbumWarning(Expression<Func<MatchThresholdSettings, int>> field)
     {
         var value = field.Compile();
         RuleFor(field)
             .GreaterThanOrEqualTo(70)
-            .When(c => value(c) >= 1)
+            .When(c => InRange(value(c), MatchThresholdSettings.AlbumMatchFloor))
             .WithMessage(MatchThresholdSettings.AlbumFarBelowDefaultWarning)
             .AsWarning();
         RuleFor(field)
             .GreaterThanOrEqualTo(MatchThresholdSettings.LidarrAlbumMatchMinimum)
             .When(c => value(c) >= 70)
-            .WithMessage(MatchThresholdSettings.AlbumBelowDefaultWarning)
+            .WithMessage(MatchThresholdSettings.BelowDefaultWarning)
             .AsWarning();
     }
 
@@ -166,8 +150,8 @@ public class MatchThresholdSettingsValidator : AbstractValidator<MatchThresholdS
         var value = field.Compile();
         RuleFor(field)
             .GreaterThanOrEqualTo(MatchThresholdSettings.LidarrTrackMatchMinimum)
-            .When(c => value(c) >= 1)
-            .WithMessage(MatchThresholdSettings.TrackBelowDefaultWarning)
+            .When(c => InRange(value(c), MatchThresholdSettings.TrackMatchFloor))
+            .WithMessage(MatchThresholdSettings.BelowDefaultWarning)
             .AsWarning();
     }
 }
@@ -198,13 +182,16 @@ public sealed record MatchThresholds(double AlbumDistance, double TrackDistance)
 
     public static MatchThresholds FromPercentages(int albumMatchMinimum, int trackMatchMinimum)
     {
-        return new MatchThresholds(ToDistance(albumMatchMinimum), ToDistance(trackMatchMinimum));
+        return new MatchThresholds(
+            ToDistance(albumMatchMinimum, MatchThresholdSettings.AlbumMatchFloor),
+            ToDistance(trackMatchMinimum, MatchThresholdSettings.TrackMatchFloor));
     }
 
-    private static double ToDistance(int percent)
+    private static double ToDistance(int percent, int floor)
     {
+        // Clamped so a value saved before the floors existed can't go below them.
         // (100 - percent) / 100.0 gives exactly 0.2 for 80, matching Lidarr's constant;
         // 1.0 - 0.8 would give 0.19999999999999996 and reject a match Lidarr accepts.
-        return (100 - Math.Clamp(percent, 1, 100)) / 100.0;
+        return (100 - Math.Clamp(percent, floor, 100)) / 100.0;
     }
 }
