@@ -6,8 +6,8 @@ namespace NzbDrone.Core.Plugins.MatchThreshold;
 public sealed class MatchThresholdPlugin : Plugin
 {
     public const string DisplayName = "Match Threshold";
-    public const string RepositoryOwner = "jasonpatrickellykrause";
-    public const string RepositoryUrl = "https://github.com/jasonpatrickellykrause/lidarr-plugin-matchthreshold";
+    public const string RepositoryOwner = "matrix-runout";
+    public const string RepositoryUrl = "https://github.com/matrix-runout/lidarr-plugin-matchthreshold";
 
     public override string Name => DisplayName;
 

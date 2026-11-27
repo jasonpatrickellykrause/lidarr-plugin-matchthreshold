@@ -12,10 +12,20 @@ The 80% and 60% values are hardcoded in Lidarr. This plugin makes them settings.
 ## Install
 
 1. In Lidarr, go to **System > Plugins**.
-2. Paste `https://github.com/jasonpatrickellykrause/lidarr-plugin-matchthreshold` and select **Install**.
+2. Paste `https://github.com/matrix-runout/lidarr-plugin-matchthreshold` and select **Install**.
 3. Restart Lidarr.
 
 Plugins need a Lidarr build with plugin support (the nightly/plugins branch).
+
+### Installed before the move to matrix-runout?
+
+This repository moved to `matrix-runout/lidarr-plugin-matchthreshold` from its previous GitHub account. Lidarr keeps each plugin in a folder named after the repository owner, so an update from the new location installs a second copy next to the old one. Reinstall once to avoid that:
+
+1. In **System > Plugins**, uninstall Match Threshold.
+2. Install it again from `https://github.com/matrix-runout/lidarr-plugin-matchthreshold`.
+3. Restart Lidarr.
+
+Your Match Threshold settings are kept.
 
 ## Configure
 
